@@ -1,0 +1,5 @@
+make table for AUC, F1, recall, precision. take average of cross validation
+
+- train maxent
+-char bigrams
+- doc2vec
