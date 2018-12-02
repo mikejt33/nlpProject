@@ -3,3 +3,5 @@ make table for AUC, F1, recall, precision. take average of cross validation
 - train maxent
 -char bigrams
 - doc2vec
+- from sklearn.metrics import precision_recall_fscore_support as score
+- mk repo private
