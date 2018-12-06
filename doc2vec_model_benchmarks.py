@@ -181,14 +181,12 @@ X_txt_train, X_txt_test, y_train, y_test = train_test_split(text, author,
 X_txt_train = [TaggedDocument(doc, [random_generator()]) for doc in X_txt_train]
 X_txt_test = [TaggedDocument(doc, [random_generator()]) for doc in X_txt_test]
 
-N_DIMS = 100
-N_EPOCHS = 50
+N_DIMS = 400
+N_EPOCHS = 100
 
 vectorizer = Doc2Vec(seed=1,
                      workers=multiprocessing.cpu_count(),
                      vector_size=N_DIMS,
-                     dm=0,  # use distributed bag of words
-                     min_count=0,
                      window=15,
                      epochs=N_EPOCHS)
 
