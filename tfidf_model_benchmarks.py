@@ -23,7 +23,7 @@ from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
-
+import seaborn as sns
 
 target_names = ["Chicken", "Punk", "perp", "Garbage", "Scum", "Toilet",
                 "Poop", "Yuck"]
@@ -249,7 +249,7 @@ def benchmark(clf):
     # #     print(metrics.confusion_matrix(y_test, pred))
     #
     # print()
-    # clf_descr = str(clf).split('(')[0]
+    # clf_descr = str(clf).split('(')[4]
     # return clf_descr, accuracy, precision, recall, fscore, train_time, test_time
     return scores
 
@@ -265,7 +265,7 @@ pipe = Pipeline([
     ('classify', LinearSVC(penalty="l2", dual=False,
                                        tol=1e-3))
 ])
-results.append(benchmark(pipe))
+results.append(["SVM L2-Norm", benchmark(pipe)])
 #
 # print('=' * 80)
 # print("Rand forest")
@@ -292,19 +292,42 @@ indices = np.arange(len(results))
 
 #results = [[x[i] for x in results] for i in range(7)]
 
-print(results)
+clf_names, scores = zip(*results)
+scores_unpacked = []
+for i, classifier in enumerate(clf_names):
+     clf_score_dict = scores[i]
+     for metric, array_ in clf_score_dict.items():
+         unwanted = ['_time', "train_"]
+         if not any(substring in metric for substring in unwanted):
+             for value in array_:
+                 print([classifier, metric, value])
+                 scores_unpacked.append([str(classifier),
+                                         str(metric),
+                                         float(value)])
+
+scores_df = pd.DataFrame(scores_unpacked,
+                         columns=["classifier", "metric", "value"])gi
+
+sns.boxplot(x="metric",
+            y="value",
+            hue="classifier",
+            data=scores_df)
+plt.show()
 
 #
 # clf_names, accuracy, precision, recall, fscore, training_time, test_time = results
 # training_time = np.array(training_time) / np.max(training_time)
 # test_time = np.array(test_time) / np.max(test_time)
+
+# results = results[0]
+# print(results["test_accuracy"])
 #
 # plt.figure(figsize=(12, 8))
 # plt.title("Benchmarks for Various Classifiers using TF-iDF")
-# plt.barh(indices, accuracy, .2, label="Accuracy", color='navy')
-# plt.barh(indices + .2, precision, .2, label="Precision")
-# plt.barh(indices + .4, recall, .2, label="Recall")
-# plt.barh(indices + .6, fscore, .2, label="F-Score")
+# plt.barh(indices, [score["test_accuracy"] for score in scores], .2, label="Accuracy", color='navy')
+# plt.barh(indices + .2, [score["test_precision_macro"] for score in scores], .2, label="Precision")
+# plt.barh(indices + .4, scores["test_recall_macro"], .2, label="Recall")
+# plt.barh(indices + .6, scores["test_f1_macro"], .2, label="F-Score")
 #
 # plt.yticks(())
 # plt.legend(loc='best')
@@ -315,5 +338,5 @@ print(results)
 # for i, c in zip(indices, clf_names):
 #     plt.text(-.3, i, c)
 #
-# plt.savefig("tf-idf benchmarks.png")
+# # plt.savefig("tf-idf benchmarks.png")
 # plt.show()
