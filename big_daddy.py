@@ -86,7 +86,8 @@ print()
 
 
 # #############################################################################
-categories = None
+categories = ["Chicken", "Punk", "perp", "Garbage", "Scum", "Toilet",
+                "Poop", "Yuck"]
 
 with open('Dan Coats.txt', 'r+') as in_file:
     textDan = in_file.read()
@@ -235,6 +236,7 @@ def benchmark(clf):
                                                average="macro")
 
     if hasattr(clf, 'coef_'):
+        print("coef shape: ", clf.coef_.shape)
         print("dimensionality: %d" % clf.coef_.shape[1])
 
         if opts.print_top10 and feature_names is not None:
@@ -242,6 +244,13 @@ def benchmark(clf):
             for i, label in enumerate(target_names):
                 top10 = np.argsort(clf.coef_[i])[-10:]
                 print(trim("%s: %s" % (label, " ".join(feature_names[top10]))))
+        print()
+
+        if opts.print_top10 and feature_names is not None:
+            print("bottom 10 keywords per class:")
+            for i, label in enumerate(target_names):
+                bottom10 = np.argsort(clf.coef_[i])[:10]
+                print(trim("%s: %s" % (label, " ".join(feature_names[bottom10]))))
         print()
 
     if opts.print_report:
@@ -287,7 +296,7 @@ clf_names, accuracy, precision, recall, fscore, training_time, test_time = resul
 training_time = np.array(training_time) / np.max(training_time)
 test_time = np.array(test_time) / np.max(test_time)
 
-plt.figure(figsize=(1, 8))
+plt.figure(figsize=(12, 8))
 plt.title("Benchmarks for Various Classifiers using TF-iDF")
 plt.barh(indices, accuracy, .2, label="Accuracy", color='navy')
 plt.barh(indices + .2, precision, .2, label="Precision")
