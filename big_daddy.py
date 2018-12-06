@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import TfidfVectorizer
-# from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.feature_selection import SelectFromModel
 from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.pipeline import Pipeline
@@ -83,82 +82,107 @@ print()
 
 
 # #############################################################################
-# Load some categories from the training set
-# if opts.all_categories:
 categories = None
-# else:
-#     categories = [
-#         'alt.atheism',
-#         'talk.religion.misc',
-#         'comp.graphics',
-#         'sci.space',
-#     ]
 
-if opts.filtered:
-    remove = ('headers', 'footers', 'quotes')
-else:
-    remove = ()
+with open('Dan Coats.txt', 'r+') as in_file:
+    textDan = in_file.read()
+    sentsDan = nltk.sent_tokenize(textDan)
 
-print("Loading 20 newsgroups dataset for categories:")
-print(categories if categories else "all")
+pdDan = pd.DataFrame({'sentence': sentsDan})
+pdDan['author'] = 'Dan Coats'
 
-data_train = fetch_20newsgroups(subset='train', categories=categories,
-                                shuffle=True, random_state=42,
-                                remove=remove)
+with open('James Mattis.txt', 'r+') as in_file:
+    textMattis = in_file.read()
+    sentsMattis = nltk.sent_tokenize(textMattis)
 
-data_test = fetch_20newsgroups(subset='test', categories=categories,
-                               shuffle=True, random_state=42,
-                               remove=remove)
-print('data loaded')
+pdMattis = pd.DataFrame({'sentence': sentsMattis})
+pdMattis['author'] = 'James Mattis'
 
-# order of labels in `target_names` can be different from `categories`
-target_names = data_train.target_names
+with open('John Kelly.txt', 'r+') as in_file:
+    textKelly = in_file.read()
+    sentsKelly = nltk.sent_tokenize(textKelly)
+
+pdKelly = pd.DataFrame({'sentence': sentsKelly})
+pdKelly['author'] = 'John Kelly'
+
+with open('Kevin Hassett.txt', 'r+') as in_file:
+    textHassett = in_file.read()
+    sentsHassett = nltk.sent_tokenize(textHassett)
+
+pdHassett = pd.DataFrame({'sentence': sentsHassett})
+pdHassett['author'] = 'Kevin Hassett'
+
+with open('Kirstjen Nielsen.txt', 'r+') as in_file:
+    textNielsen = in_file.read()
+    sentsNielsen = nltk.sent_tokenize(textNielsen)
+
+pdNielsen = pd.DataFrame({'sentence': sentsNielsen})
+pdNielsen['author'] = 'Kirstjen Nielsen'
+
+with open('Larry Kudlow.txt', 'r+') as in_file:
+    textKudlow = in_file.read()
+    sentsKudlow = nltk.sent_tokenize(textKudlow)
+
+pdKudlow = pd.DataFrame({'sentence': sentsKudlow})
+pdKudlow['author'] = 'Larry Kudlow'
+
+with open('Mike Pence.txt', 'r+') as in_file:
+    textPence = in_file.read()
+    sentsPence = nltk.sent_tokenize(textPence)
+
+pdPence = pd.DataFrame({'sentence': sentsPence})
+pdPence['author'] = 'Mike Pence'
+
+with open('Mike Pompeo.txt', 'r+') as in_file:
+    textPompeo = in_file.read()
+    sentsPompeo = nltk.sent_tokenize(textPompeo)
+
+pdPompeo = pd.DataFrame({'sentence': sentsPompeo})
+pdPompeo['author'] = 'Mike Pompeo'
+
+train = pd.DataFrame()
+train = pd.concat(
+    [pdDan, pdMattis, pdKelly, pdHassett, pdNielsen, pdKudlow, pdPence,
+     pdPompeo])
+
+author_to_num ={'Dan Coats': "Chicken", 'James Mattis': "Punk",
+                'John Kelly': "perp", 'Kevin Hassett': "Garbage",
+                  'Kirstjen Nielsen': "Scum", 'Larry Kudlow': "Toilet",
+                'Mike Pence': "Poop", 'Mike Pompeo': "Yuck"}
+
+train["author"].replace(author_to_num, inplace=True)
+author = train['author'].tolist()
+
+text = train['sentence'].tolist()
+"""
+get rid of non-breaking spaces,
+double spaces,
+NEW LINES
+other unicode
+"""
+text = [t.replace('\xa0', ' ').replace("\u2028", " ").replace(u'\ufeff',' ') \
+        .replace('\n', " ").replace("  ", " ") for t in text]
+
+print("there are ", len(text), "sentences")
+
+X_txt_train, X_txt_test, y_train, y_test = train_test_split(text, author, test_size=0.25, random_state=1337)
 
 
-# def size_mb(docs):
-#     return sum(len(s.encode('utf-8')) for s in docs) / 1e6
-#
-#
-# data_train_size_mb = size_mb(data_train.data)
-# data_test_size_mb = size_mb(data_test.data)
-#
-# print("%d documents - %0.3fMB (training set)" % (
-#     len(data_train.data), data_train_size_mb))
-# print("%d documents - %0.3fMB (test set)" % (
-#     len(data_test.data), data_test_size_mb))
-# # print("%d categories" % len(categories))
-# print()
 
-# split a training set and a test set
-y_train, y_test = data_train.target, data_test.target
-
-# print("Extracting features from the training data using a sparse vectorizer")
-t0 = time()
-# if opts.use_hashing:
-#     vectorizer = HashingVectorizer(stop_words='english', alternate_sign=False,
-#                                    n_features=opts.n_features)
-#     X_train = vectorizer.transform(data_train.data)
 # else:
 vectorizer = TfidfVectorizer(sublinear_tf=True, max_df=0.5,
                              stop_words='english')
-X_train = vectorizer.fit_transform(data_train.data)
-duration = time() - t0
-# print("done in %fs at %0.3fMB/s" % (duration, data_train_size_mb / duration))
+X_train = vectorizer.fit_transform(X_txt_train)
 print("n_samples: %d, n_features: %d" % X_train.shape)
 print()
 
 print("Extracting features from the test data using the same vectorizer")
 t0 = time()
-X_test = vectorizer.transform(data_test.data)
+X_test = vectorizer.transform(X_txt_test)
 duration = time() - t0
-# print("done in %fs at %0.3fMB/s" % (duration, data_test_size_mb / duration))
 print("n_samples: %d, n_features: %d" % X_test.shape)
 print()
 
-# mapping from integer feature name to original token string
-# if opts.use_hashing:
-#     feature_names = None
-# else:
 feature_names = vectorizer.get_feature_names()
 
 if opts.select_chi2:
