@@ -282,9 +282,9 @@ clf = autosklearn.classification.AutoSklearnClassifier(ensemble_size=1,
                                                        time_left_for_this_task=2500)
 clf.fit(X_train, y_train)
 
-clf.cv_results_
-clf.sprint_statistics()
-clf.show_models()
+print(clf.cv_results_))
+print(clf.sprint_statistics())
+print(clf.show_models())
 
 y_hat = clf.predict(X_test)
 print("Accuracy score", metrics.accuracy_score(y_test, y_hat))
