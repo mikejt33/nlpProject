@@ -14,7 +14,6 @@ from time import time
 import matplotlib.pyplot as plt
 import nltk
 import pandas as pd
-#from sklearn.datasets import fetch_20newsgroups
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectFromModel
@@ -24,6 +23,9 @@ from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
+import string
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+import multiprocessing
 
 
 target_names = ["Chicken", "Punk", "perp", "Garbage", "Scum", "Toilet",
@@ -170,42 +172,63 @@ text = [t.replace('\xa0', ' ').replace("\u2028", " ").replace(u'\ufeff',' ') \
 
 print("there are ", len(text), "sentences")
 
+def random_generator(size=6, chars=list(string.ascii_uppercase + string.digits)):
+    return ''.join(list(np.random.choice(chars, size)))
+
+
 X_txt_train, X_txt_test, y_train, y_test = train_test_split(text, author, test_size=0.25, random_state=1337)
+X_txt_train = [TaggedDocument(doc, [random_generator()]) for doc in X_txt_train]
+X_txt_test = [TaggedDocument(doc, [random_generator()]) for doc in X_txt_test]
 
 
 
-# else:
-vectorizer = TfidfVectorizer(sublinear_tf=True, max_df=0.5,
-                             stop_words='english')
-X_train = vectorizer.fit_transform(X_txt_train)
-print("n_samples: %d, n_features: %d" % X_train.shape)
+N_DIMS = 100
+N_EPOCHS = 50
+
+
+vectorizer = Doc2Vec(seed=1,
+            workers=multiprocessing.cpu_count(),
+            vector_size=N_DIMS,
+            dm=0,  # use distributed bag of words
+            min_count=0,
+            window=15,
+            epochs=N_EPOCHS)
+
+
+
+vectorizer.build_vocab(X_txt_train)
+vectorizer.train(X_txt_train, total_examples=vectorizer.corpus_count,
+                 epochs=vectorizer.epochs)
+
+X_train = [vectorizer.infer_vector(document.words) for document in X_txt_train]
+# print("n_samples: %d, n_features: %d" % X_train.shape)
 print()
 
 print("Extracting features from the test data using the same vectorizer")
 t0 = time()
-X_test = vectorizer.transform(X_txt_test)
+X_test = [vectorizer.infer_vector(document.words) for document in X_txt_test]
 duration = time() - t0
-print("n_samples: %d, n_features: %d" % X_test.shape)
-print()
+# print("n_samples: %d, n_features: %d" % X_test.shape)
+# print()
 
-feature_names = vectorizer.get_feature_names()
-
-if opts.select_chi2:
-    print("Extracting %d best features by a chi-squared test" %
-          opts.select_chi2)
-    t0 = time()
-    ch2 = SelectKBest(chi2, k=opts.select_chi2)
-    X_train = ch2.fit_transform(X_train, y_train)
-    X_test = ch2.transform(X_test)
-    if feature_names:
-        # keep selected feature names
-        feature_names = [feature_names[i] for i
-                         in ch2.get_support(indices=True)]
-    print("done in %fs" % (time() - t0))
-    print()
-
-if feature_names:
-    feature_names = np.asarray(feature_names)
+# feature_names = vectorizer.get_feature_names()
+#
+# if opts.select_chi2:
+#     print("Extracting %d best features by a chi-squared test" %
+#           opts.select_chi2)
+#     t0 = time()
+#     ch2 = SelectKBest(chi2, k=opts.select_chi2)
+#     X_train = ch2.fit_transform(X_train, y_train)
+#     X_test = ch2.transform(X_test)
+#     if feature_names:
+#         # keep selected feature names
+#         feature_names = [feature_names[i] for i
+#                          in ch2.get_support(indices=True)]
+#     print("done in %fs" % (time() - t0))
+#     print()
+#
+# if feature_names:
+#     feature_names = np.asarray(feature_names)
 
 
 def trim(s):
@@ -234,24 +257,7 @@ def benchmark(clf):
 
     precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, pred,
                                                average="macro")
-
-    if hasattr(clf, 'coef_'):
-        print("coef shape: ", clf.coef_.shape)
-        print("dimensionality: %d" % clf.coef_.shape[1])
-
-        if opts.print_top10 and feature_names is not None:
-            print("top 10 keywords per class:")
-            for i, label in enumerate(target_names):
-                top10 = np.argsort(clf.coef_[i])[-10:]
-                print(trim("%s: %s" % (label, " ".join(feature_names[top10]))))
-        print()
-
-        if opts.print_top10 and feature_names is not None:
-            print("bottom 10 keywords per class:")
-            for i, label in enumerate(target_names):
-                bottom10 = np.argsort(clf.coef_[i])[:10]
-                print(trim("%s: %s" % (label, " ".join(feature_names[bottom10]))))
-        print()
+    #g
 
     if opts.print_report:
         print("classification report:")
@@ -312,5 +318,5 @@ plt.subplots_adjust(bottom=.05)
 for i, c in zip(indices, clf_names):
     plt.text(-.3, i, c)
 
-plt.savefig("tf-idf benchmarks.png")
+# plt.savefig("tf-idf benchmarks.png")
 plt.show()
