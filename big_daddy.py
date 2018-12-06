@@ -12,8 +12,10 @@ from optparse import OptionParser
 import sys
 from time import time
 import matplotlib.pyplot as plt
-
-from sklearn.datasets import fetch_20newsgroups
+import nltk
+import pandas as pd
+#from sklearn.datasets import fetch_20newsgroups
+from sklearn.model_selection import train_test_split, KFold
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectFromModel
 from sklearn.feature_selection import SelectKBest, chi2
@@ -21,9 +23,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
-# from sklearn.utils.extmath import density
 from sklearn import metrics
 
+
+target_names = ["Chicken", "Punk", "perp", "Garbage", "Scum", "Toilet",
+                "Poop", "Yuck"]
 
 # Display progress logs on stdout
 logging.basicConfig(level=logging.INFO,
@@ -224,12 +228,14 @@ def benchmark(clf):
     test_time = time() - t0
     print("test time:  %0.3fs" % test_time)
 
-    score = metrics.accuracy_score(y_test, pred)
-    print("accuracy:   %0.3f" % score)
+    accuracy = metrics.accuracy_score(y_test, pred)
+    print("accuracy:   %0.3f" % accuracy)
+
+    precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, pred,
+                                               average="macro")
 
     if hasattr(clf, 'coef_'):
         print("dimensionality: %d" % clf.coef_.shape[1])
-        # print("density: %f" % density(clf.coef_))
 
         if opts.print_top10 and feature_names is not None:
             print("top 10 keywords per class:")
@@ -243,13 +249,13 @@ def benchmark(clf):
         print(metrics.classification_report(y_test, pred,
                                             target_names=target_names))
 
-    if opts.print_cm:
-        print("confusion matrix:")
-        print(metrics.confusion_matrix(y_test, pred))
+    # if opts.print_cm:
+    #     print("confusion matrix:")
+    #     print(metrics.confusion_matrix(y_test, pred))
 
     print()
     clf_descr = str(clf).split('(')[0]
-    return clf_descr, score, train_time, test_time
+    return clf_descr, accuracy, precision, recall, fscore, train_time, test_time
 
 
 results = []
@@ -271,31 +277,23 @@ print("Naive Bayes")
 results.append(benchmark(MultinomialNB(alpha=.01)))
 results.append(benchmark(BernoulliNB(alpha=.01)))
 
-print('=' * 80)
-print("LinearSVC with L1-based feature selection")
-# The smaller C, the stronger the regularization.
-# The more regularization, the more sparsity.
-results.append(benchmark(Pipeline([
-  ('feature_selection', SelectFromModel(LinearSVC(penalty="l1", dual=False,
-                                                  tol=1e-3))),
-  ('classification', LinearSVC(penalty="l2"))])))
-
 # make some plots
 
 indices = np.arange(len(results))
 
-results = [[x[i] for x in results] for i in range(4)]
+results = [[x[i] for x in results] for i in range(7)]
 
-clf_names, score, training_time, test_time = results
+clf_names, accuracy, precision, recall, fscore, training_time, test_time = results
 training_time = np.array(training_time) / np.max(training_time)
 test_time = np.array(test_time) / np.max(test_time)
 
-plt.figure(figsize=(12, 8))
-plt.title("Score")
-plt.barh(indices, score, .2, label="score", color='navy')
-# plt.barh(indices + .3, training_time, .2, label="training time",
-#          color='c')
-# plt.barh(indices + .6, test_time, .2, label="test time", color='darkorange')
+plt.figure(figsize=(1, 8))
+plt.title("Benchmarks for Various Classifiers using TF-iDF")
+plt.barh(indices, accuracy, .2, label="Accuracy", color='navy')
+plt.barh(indices + .2, precision, .2, label="Precision")
+plt.barh(indices + .4, recall, .2, label="Recall")
+plt.barh(indices + .6, fscore, .2, label="F-Score")
+
 plt.yticks(())
 plt.legend(loc='best')
 plt.subplots_adjust(left=.25)
@@ -305,4 +303,5 @@ plt.subplots_adjust(bottom=.05)
 for i, c in zip(indices, clf_names):
     plt.text(-.3, i, c)
 
+plt.savefig("tf-idf benchmarks.png")
 plt.show()
