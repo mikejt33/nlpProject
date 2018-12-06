@@ -20,7 +20,9 @@ from sklearn.feature_selection import SelectFromModel
 from sklearn.pipeline import Pipeline
 # from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.svm import LinearSVC
-from sklearn.naive_bayes import BernoulliNB, MultinomialNB
+from sklearn.naive_bayes import MultinomialNB, GaussianNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
 import seaborn as sns
@@ -257,7 +259,8 @@ def benchmark(clf):
 results = []
 
 print('=' * 80)
-print("L2 SVM")
+classifier_name = "SVM L2-norm"
+print(classifier_name)
 pipe = Pipeline([
     # the reduce_dim stage is populated by the param_grid
     ('vectorize', TfidfVectorizer(sublinear_tf=True, max_df=0.5,
@@ -265,26 +268,66 @@ pipe = Pipeline([
     ('classify', LinearSVC(penalty="l2", dual=False,
                                        tol=1e-3))
 ])
-results.append(["SVM L2-Norm", benchmark(pipe)])
-#
-# print('=' * 80)
-# print("Rand forest")
-# results.append(benchmark(RandomForestClassifier(n_estimators=100)))
-#
-# for penalty in ["l2", "l1"]:
-#     print('=' * 80)
-#     print("%s penalty" % penalty.upper())
-#     # Train Liblinear model
-#     results.append(benchmark(LinearSVC(penalty=penalty, dual=False,
-#                                        tol=1e-3)))
-#
-#
-# # Train sparse Naive Bayes classifiers
-# print('=' * 80)
-# print("Naive Bayes")
-# results.append(benchmark(MultinomialNB(alpha=.01)))
-# results.append(benchmark(BernoulliNB(alpha=.01)))
+results.append([classifier_name, benchmark(pipe)])
 
+print('=' * 80)
+classifier_name = "SVM L1-norm"
+print(classifier_name)
+pipe = Pipeline([
+    # the reduce_dim stage is populated by the param_grid
+    ('vectorize', TfidfVectorizer(sublinear_tf=True, max_df=0.5,
+                             stop_words='english')),
+    ('classify', LinearSVC(penalty="l1", dual=False,
+                                       tol=1e-3))
+])
+results.append([classifier_name, benchmark(pipe)])
+
+
+print('=' * 80)
+classifier_name = "RandForst|100 estim|full depth"
+print(classifier_name)
+pipe = Pipeline([
+    # the reduce_dim stage is populated by the param_grid
+    ('vectorize', TfidfVectorizer(sublinear_tf=True, max_df=0.5,
+                             stop_words='english')),
+    ('classify', RandomForestClassifier(n_estimators=100))
+])
+results.append([classifier_name, benchmark(pipe)])
+
+# Train sparse Naive Bayes classifiers
+print('=' * 80)
+classifier_name = "MultinomialNB"
+print(classifier_name)
+pipe = Pipeline([
+    # the reduce_dim stage is populated by the param_grid
+    ('vectorize', TfidfVectorizer(sublinear_tf=True, max_df=0.5,
+                             stop_words='english')),
+    ('classify', MultinomialNB(alpha=.01))
+])
+results.append([classifier_name, benchmark(pipe)])
+
+
+print('=' * 80)
+classifier_name = "LogisticRegr"
+print(classifier_name)
+pipe = Pipeline([
+    # the reduce_dim stage is populated by the param_grid
+    ('vectorize', TfidfVectorizer(sublinear_tf=True, max_df=0.5,
+                             stop_words='english')),
+    ('classify', LogisticRegression())
+])
+results.append([classifier_name, benchmark(pipe)])
+
+print('=' * 80)
+classifier_name = "KNN"
+print(classifier_name)
+pipe = Pipeline([
+    # the reduce_dim stage is populated by the param_grid
+    ('vectorize', TfidfVectorizer(sublinear_tf=True, max_df=0.5,
+                             stop_words='english')),
+    ('classify', KNeighborsClassifier())
+])
+results.append([classifier_name, benchmark(pipe)])
 
 # make some plots
 
@@ -297,21 +340,33 @@ scores_unpacked = []
 for i, classifier in enumerate(clf_names):
      clf_score_dict = scores[i]
      for metric, array_ in clf_score_dict.items():
+         metric = str(metric)
          unwanted = ['_time', "train_"]
          if not any(substring in metric for substring in unwanted):
              for value in array_:
-                 print([classifier, metric, value])
+                 metric = metric.replace('test_', '')
                  scores_unpacked.append([str(classifier),
-                                         str(metric),
+                                         metric,
                                          float(value)])
 
 scores_df = pd.DataFrame(scores_unpacked,
-                         columns=["classifier", "metric", "value"])gi
+                         columns=["classifier", "metric", "value"])
 
+plt.style.use("dark_background")
+sns.set_context("talk")
 sns.boxplot(x="metric",
             y="value",
             hue="classifier",
             data=scores_df)
+plt.xticks(rotation=45)
+plt.subplots_adjust(bottom=.25)
+plt.subplots_adjust(top=.95)
+plt.subplots_adjust(left=0.2, right=0.7, top=0.95, bottom=0.25)
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.ylim(0, 1)
+plt.xlabel("Metric")
+plt.ylabel("Score")
+plt.title("Benchmarks for Various Classifiers using TF-iDF (5-Fold CV)")
 plt.show()
 
 #
