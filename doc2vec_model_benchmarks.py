@@ -276,7 +276,7 @@ def benchmark(clf):
 results = []
 print('=' * 80)
 print("Rand forest")
-results.append(benchmark(RandomForestClassifier(n_estimators=100, max_depth=2)))
+results.append(benchmark(RandomForestClassifier(n_estimators=100)))
 
 for penalty in ["l2", "l1"]:
     print('=' * 80)
@@ -289,8 +289,8 @@ for penalty in ["l2", "l1"]:
 # Train sparse Naive Bayes classifiers
 print('=' * 80)
 print("Naive Bayes")
-results.append(benchmark(MultinomialNB(alpha=.01)))
-results.append(benchmark(BernoulliNB(alpha=.01)))
+# results.append(benchmark(MultinomialNB(alpha=.01)))
+# results.append(benchmark(BernoulliNB(alpha=.01)))
 
 # make some plots
 
@@ -303,20 +303,20 @@ training_time = np.array(training_time) / np.max(training_time)
 test_time = np.array(test_time) / np.max(test_time)
 
 plt.figure(figsize=(12, 8))
-plt.title("Benchmarks for Various Classifiers using TF-iDF")
-plt.barh(indices, accuracy, .2, label="Accuracy", color='navy')
+plt.title("Benchmarks for Various Classifiers using Doc2vec")
+plt.barh(indices, accuracy, .2, label="Accuracy")
 plt.barh(indices + .2, precision, .2, label="Precision")
 plt.barh(indices + .4, recall, .2, label="Recall")
 plt.barh(indices + .6, fscore, .2, label="F-Score")
 
 plt.yticks(())
 plt.legend(loc='best')
-plt.subplots_adjust(left=.25)
+#plt.subplots_adjust(left=.25)
 plt.subplots_adjust(top=.95)
 plt.subplots_adjust(bottom=.05)
 
 for i, c in zip(indices, clf_names):
-    plt.text(-.3, i, c)
+    plt.text(-0.15, i, c)
 
-# plt.savefig("tf-idf benchmarks.png")
+plt.savefig("doc2vec benchmarks.png")
 plt.show()
