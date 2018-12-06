@@ -204,62 +204,62 @@ def trim(s):
 
 scoring = ['precision_macro', 'recall_macro', "f1_macro", "accuracy"]
 
-def benchmark(clf):
-    print('_' * 80)
-    print("Training: ")
-    print(clf)
-    # t0 = time()
-    # scores = cross_validate(clf, text, author, scoring=scoring,
-    #                         cv = 5)
-
-    clf.fit(X_train, y_train)
-    train_time = time() - t0
-    print("train time: %0.3fs" % train_time)
-
-    t0 = time()
-    pred = clf.predict(X_test)
-    test_time = time() - t0
-    print("test time:  %0.3fs" % test_time)
-    accuracy = metrics.accuracy_score(y_test, pred)
-    print("accuracy:   %0.3f" % accuracy)
-
-    precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, pred,
-                                               average="macro")
-
-    if hasattr(clf, 'coef_'):
-        print("coef shape: ", clf.coef_.shape)
-        print("dimensionality: %d" % clf.coef_.shape[1])
-
-        if opts.print_top10 and feature_names is not None:
-            print("top 10 keywords per class:")
-            for i, label in enumerate(target_names):
-                top10 = np.argsort(clf.coef_[i])[-10:]
-                print(trim("%s: %s" % (label, " ".join(feature_names[top10]))))
-        print()
-
-        if opts.print_top10 and feature_names is not None:
-            print("bottom 10 keywords per class:")
-            for i, label in enumerate(target_names):
-                bottom10 = np.argsort(clf.coef_[i])[:10]
-                print(trim("%s: %s" % (label, " ".join(feature_names[bottom10]))))
-        print()
-
-    if opts.print_report:
-        print("classification report:")
-        print(metrics.classification_report(y_test, pred,
-                                            target_names=target_names))
-
-    # if opts.print_cm:
-    #     print("confusion matrix:")
-    #     print(metrics.confusion_matrix(y_test, pred))
-
-    print()
-    clf_descr = str(clf).split('(')[4]
-    return clf_descr, accuracy, precision, recall, fscore, train_time, test_time
-    # return scores
-
-
-results = []
+# def benchmark(clf):
+#     print('_' * 80)
+#     print("Training: ")
+#     print(clf)
+#     # t0 = time()
+#     # scores = cross_validate(clf, text, author, scoring=scoring,
+#     #                         cv = 5)
+#
+#     clf.fit(X_train, y_train)
+#     train_time = time() - t0
+#     print("train time: %0.3fs" % train_time)
+#
+#     t0 = time()
+#     pred = clf.predict(X_test)
+#     test_time = time() - t0
+#     print("test time:  %0.3fs" % test_time)
+#     accuracy = metrics.accuracy_score(y_test, pred)
+#     print("accuracy:   %0.3f" % accuracy)
+#
+#     precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, pred,
+#                                                average="macro")
+#
+#     if hasattr(clf, 'coef_'):
+#         print("coef shape: ", clf.coef_.shape)
+#         print("dimensionality: %d" % clf.coef_.shape[1])
+#
+#         if opts.print_top10 and feature_names is not None:
+#             print("top 10 keywords per class:")
+#             for i, label in enumerate(target_names):
+#                 top10 = np.argsort(clf.coef_[i])[-10:]
+#                 print(trim("%s: %s" % (label, " ".join(feature_names[top10]))))
+#         print()
+#
+#         if opts.print_top10 and feature_names is not None:
+#             print("bottom 10 keywords per class:")
+#             for i, label in enumerate(target_names):
+#                 bottom10 = np.argsort(clf.coef_[i])[:10]
+#                 print(trim("%s: %s" % (label, " ".join(feature_names[bottom10]))))
+#         print()
+#
+#     if opts.print_report:
+#         print("classification report:")
+#         print(metrics.classification_report(y_test, pred,
+#                                             target_names=target_names))
+#
+#     # if opts.print_cm:
+#     #     print("confusion matrix:")
+#     #     print(metrics.confusion_matrix(y_test, pred))
+#
+#     print()
+#     clf_descr = str(clf).split('(')[4]
+#     return clf_descr, accuracy, precision, recall, fscore, train_time, test_time
+#     # return scores
+#
+#
+# results = []
 #
 # print('=' * 80)
 # classifier_name = "SVM L2-norm"
@@ -277,13 +277,21 @@ results = []
 # classifier_name = "SVM L1-norm"
 # print(classifier_name)
 
-clf = autosklearn.classification.AutoSklearnClassifier()
+clf = autosklearn.classification.AutoSklearnClassifier(ensemble_size=1,
+                                                       per_run_time_limit=60,
+                                                       time_left_for_this_task=2500)
 clf.fit(X_train, y_train)
+
+clf.cv_results_
+clf.sprint_statistics()
+clf.show_models()
+
 y_hat = clf.predict(X_test)
 print("Accuracy score", metrics.accuracy_score(y_test, y_hat))
-
-precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, pred,
+precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, y_hat,
                                                average="macro")
+
+print(precision, recall, fscore, _support )
 
 if hasattr(clf, 'coef_'):
     print("coef shape: ", clf.coef_.shape)
@@ -303,9 +311,9 @@ if hasattr(clf, 'coef_'):
             print(trim("%s: %s" % (label, " ".join(feature_names[bottom10]))))
     print()
 
-if opts.print_report:
-    print("classification report:")
-    print(metrics.classification_report(y_test, pred,
+
+print("classification report:")
+print(metrics.classification_report(y_test, y_hat,
                                         target_names=target_names))
 
 #
