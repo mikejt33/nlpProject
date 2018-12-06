@@ -17,8 +17,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectFromModel
+from sklearn.pipeline import Pipeline
 # from sklearn.feature_selection import SelectKBest, chi2
-# from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
@@ -172,7 +172,6 @@ print("there are ", len(text), "sentences")
 X_txt_train, X_txt_test, y_train, y_test = train_test_split(text, author, test_size=0.25, random_state=1337)
 
 
-
 # else:
 vectorizer = TfidfVectorizer(sublinear_tf=True, max_df=0.5,
                              stop_words='english')
@@ -187,131 +186,134 @@ duration = time() - t0
 print("n_samples: %d, n_features: %d" % X_test.shape)
 print()
 
-feature_names = vectorizer.get_feature_names()
-
-if opts.select_chi2:
-    print("Extracting %d best features by a chi-squared test" %
-          opts.select_chi2)
-    t0 = time()
-    ch2 = SelectKBest(chi2, k=opts.select_chi2)
-    X_train = ch2.fit_transform(X_train, y_train)
-    X_test = ch2.transform(X_test)
-    if feature_names:
-        # keep selected feature names
-        feature_names = [feature_names[i] for i
-                         in ch2.get_support(indices=True)]
-    print("done in %fs" % (time() - t0))
-    print()
-
-if feature_names:
-    feature_names = np.asarray(feature_names)
-
+feature_names = np.asarray(vectorizer.get_feature_names())
 
 def trim(s):
-    """Trim string to fit on terminal (assuming 80-column display)"""
-    return s if len(s) <= 80 else s[:77] + "..."
+    return s
+    # """Trim string to fit on terminal (assuming 80-column display)"""
+    # return s if len(s) <= 80 else s[:77] + "..."
 
 
 # #############################################################################
 # Benchmark classifiers
+
+scoring = ['precision_macro', 'recall_macro', "f1_macro", "accuracy"]
+
 def benchmark(clf):
     print('_' * 80)
     print("Training: ")
     print(clf)
     t0 = time()
-    scores = cross_validate(clf, iris.data, iris.target, scoring=scoring,
-                            ...
-    cv = 5, return_train_score = False)
-    clf.fit(X_train, y_train)
-    train_time = time() - t0
-    print("train time: %0.3fs" % train_time)
+    scores = cross_validate(clf, text, author, scoring=scoring,
+                            cv = 5)
 
-    t0 = time()
-    pred = clf.predict(X_test)
-    test_time = time() - t0
-    print("test time:  %0.3fs" % test_time)
-    accuracy = metrics.accuracy_score(y_test, pred)
-    print("accuracy:   %0.3f" % accuracy)
-
-    precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, pred,
-                                               average="macro")
-
-    if hasattr(clf, 'coef_'):
-        print("coef shape: ", clf.coef_.shape)
-        print("dimensionality: %d" % clf.coef_.shape[1])
-
-        if opts.print_top10 and feature_names is not None:
-            print("top 10 keywords per class:")
-            for i, label in enumerate(target_names):
-                top10 = np.argsort(clf.coef_[i])[-10:]
-                print(trim("%s: %s" % (label, " ".join(feature_names[top10]))))
-        print()
-
-        if opts.print_top10 and feature_names is not None:
-            print("bottom 10 keywords per class:")
-            for i, label in enumerate(target_names):
-                bottom10 = np.argsort(clf.coef_[i])[:10]
-                print(trim("%s: %s" % (label, " ".join(feature_names[bottom10]))))
-        print()
-
-    if opts.print_report:
-        print("classification report:")
-        print(metrics.classification_report(y_test, pred,
-                                            target_names=target_names))
-
-    # if opts.print_cm:
-    #     print("confusion matrix:")
-    #     print(metrics.confusion_matrix(y_test, pred))
-
-    print()
-    clf_descr = str(clf).split('(')[0]
-    return clf_descr, accuracy, precision, recall, fscore, train_time, test_time
+    # clf.fit(X_train, y_train)
+    # train_time = time() - t0
+    # print("train time: %0.3fs" % train_time)
+    #
+    # t0 = time()
+    # pred = clf.predict(X_test)
+    # test_time = time() - t0
+    # print("test time:  %0.3fs" % test_time)
+    # accuracy = metrics.accuracy_score(y_test, pred)
+    # print("accuracy:   %0.3f" % accuracy)
+    #
+    # precision, recall, fscore, _support = metrics.precision_recall_fscore_support(y_test, pred,
+    #                                            average="macro")
+    #
+    # if hasattr(clf, 'coef_'):
+    #     print("coef shape: ", clf.coef_.shape)
+    #     print("dimensionality: %d" % clf.coef_.shape[1])
+    #
+    #     if opts.print_top10 and feature_names is not None:
+    #         print("top 10 keywords per class:")
+    #         for i, label in enumerate(target_names):
+    #             top10 = np.argsort(clf.coef_[i])[-10:]
+    #             print(trim("%s: %s" % (label, " ".join(feature_names[top10]))))
+    #     print()
+    #
+    #     if opts.print_top10 and feature_names is not None:
+    #         print("bottom 10 keywords per class:")
+    #         for i, label in enumerate(target_names):
+    #             bottom10 = np.argsort(clf.coef_[i])[:10]
+    #             print(trim("%s: %s" % (label, " ".join(feature_names[bottom10]))))
+    #     print()
+    #
+    # if opts.print_report:
+    #     print("classification report:")
+    #     print(metrics.classification_report(y_test, pred,
+    #                                         target_names=target_names))
+    #
+    # # if opts.print_cm:
+    # #     print("confusion matrix:")
+    # #     print(metrics.confusion_matrix(y_test, pred))
+    #
+    # print()
+    # clf_descr = str(clf).split('(')[0]
+    # return clf_descr, accuracy, precision, recall, fscore, train_time, test_time
+    return scores
 
 
 results = []
+
 print('=' * 80)
-print("Rand forest")
-results.append(benchmark(RandomForestClassifier(n_estimators=100)))
+print("L2 SVM")
+pipe = Pipeline([
+    # the reduce_dim stage is populated by the param_grid
+    ('vectorize', TfidfVectorizer(sublinear_tf=True, max_df=0.5,
+                             stop_words='english')),
+    ('classify', LinearSVC(penalty="l2", dual=False,
+                                       tol=1e-3))
+])
+results.append(benchmark(pipe))
+#
+# print('=' * 80)
+# print("Rand forest")
+# results.append(benchmark(RandomForestClassifier(n_estimators=100)))
+#
+# for penalty in ["l2", "l1"]:
+#     print('=' * 80)
+#     print("%s penalty" % penalty.upper())
+#     # Train Liblinear model
+#     results.append(benchmark(LinearSVC(penalty=penalty, dual=False,
+#                                        tol=1e-3)))
+#
+#
+# # Train sparse Naive Bayes classifiers
+# print('=' * 80)
+# print("Naive Bayes")
+# results.append(benchmark(MultinomialNB(alpha=.01)))
+# results.append(benchmark(BernoulliNB(alpha=.01)))
 
-for penalty in ["l2", "l1"]:
-    print('=' * 80)
-    print("%s penalty" % penalty.upper())
-    # Train Liblinear model
-    results.append(benchmark(LinearSVC(penalty=penalty, dual=False,
-                                       tol=1e-3)))
-
-
-# Train sparse Naive Bayes classifiers
-print('=' * 80)
-print("Naive Bayes")
-results.append(benchmark(MultinomialNB(alpha=.01)))
-results.append(benchmark(BernoulliNB(alpha=.01)))
 
 # make some plots
 
 indices = np.arange(len(results))
 
-results = [[x[i] for x in results] for i in range(7)]
+#results = [[x[i] for x in results] for i in range(7)]
 
-clf_names, accuracy, precision, recall, fscore, training_time, test_time = results
-training_time = np.array(training_time) / np.max(training_time)
-test_time = np.array(test_time) / np.max(test_time)
+print(results)
 
-plt.figure(figsize=(12, 8))
-plt.title("Benchmarks for Various Classifiers using TF-iDF")
-plt.barh(indices, accuracy, .2, label="Accuracy", color='navy')
-plt.barh(indices + .2, precision, .2, label="Precision")
-plt.barh(indices + .4, recall, .2, label="Recall")
-plt.barh(indices + .6, fscore, .2, label="F-Score")
-
-plt.yticks(())
-plt.legend(loc='best')
-plt.subplots_adjust(left=.25)
-plt.subplots_adjust(top=.95)
-plt.subplots_adjust(bottom=.05)
-
-for i, c in zip(indices, clf_names):
-    plt.text(-.3, i, c)
-
-plt.savefig("tf-idf benchmarks.png")
-plt.show()
+#
+# clf_names, accuracy, precision, recall, fscore, training_time, test_time = results
+# training_time = np.array(training_time) / np.max(training_time)
+# test_time = np.array(test_time) / np.max(test_time)
+#
+# plt.figure(figsize=(12, 8))
+# plt.title("Benchmarks for Various Classifiers using TF-iDF")
+# plt.barh(indices, accuracy, .2, label="Accuracy", color='navy')
+# plt.barh(indices + .2, precision, .2, label="Precision")
+# plt.barh(indices + .4, recall, .2, label="Recall")
+# plt.barh(indices + .6, fscore, .2, label="F-Score")
+#
+# plt.yticks(())
+# plt.legend(loc='best')
+# plt.subplots_adjust(left=.25)
+# plt.subplots_adjust(top=.95)
+# plt.subplots_adjust(bottom=.05)
+#
+# for i, c in zip(indices, clf_names):
+#     plt.text(-.3, i, c)
+#
+# plt.savefig("tf-idf benchmarks.png")
+# plt.show()
