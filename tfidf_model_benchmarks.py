@@ -14,12 +14,11 @@ from time import time
 import matplotlib.pyplot as plt
 import nltk
 import pandas as pd
-#from sklearn.datasets import fetch_20newsgroups
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectFromModel
-from sklearn.feature_selection import SelectKBest, chi2
-from sklearn.pipeline import Pipeline
+# from sklearn.feature_selection import SelectKBest, chi2
+# from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
@@ -220,6 +219,9 @@ def benchmark(clf):
     print("Training: ")
     print(clf)
     t0 = time()
+    scores = cross_validate(clf, iris.data, iris.target, scoring=scoring,
+                            ...
+    cv = 5, return_train_score = False)
     clf.fit(X_train, y_train)
     train_time = time() - t0
     print("train time: %0.3fs" % train_time)
@@ -228,7 +230,6 @@ def benchmark(clf):
     pred = clf.predict(X_test)
     test_time = time() - t0
     print("test time:  %0.3fs" % test_time)
-
     accuracy = metrics.accuracy_score(y_test, pred)
     print("accuracy:   %0.3f" % accuracy)
 
@@ -270,7 +271,7 @@ def benchmark(clf):
 results = []
 print('=' * 80)
 print("Rand forest")
-results.append(benchmark(RandomForestClassifier(n_estimators=100, max_depth=2)))
+results.append(benchmark(RandomForestClassifier(n_estimators=100)))
 
 for penalty in ["l2", "l1"]:
     print('=' * 80)
